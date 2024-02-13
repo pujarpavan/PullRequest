@@ -1,53 +1,22 @@
+name: Pull PR Labels
+
 on:
-  schedule:
-    - cron: '*/5 * * * *'  # Run every 5 minutes
+  pull_request:
+    types: [opened, synchronize]
 
 jobs:
-  check_pull_requests:
-    runs-on: self-hosted  # Specify that the job should run on a self-hosted runner
+  pull_labels:
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Check if Docker is installed
-        run: docker --version || echo "Docker is not installed"
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-      - name: Install Docker if not installed
-        if: steps.docker.outputs.exit-code != '0'
+      - name: Get PR Labels
+        id: get_labels
         run: |
-          # Add commands here to install Docker on the self-hosted runner
-          # For example, if using Ubuntu:
-          # sudo apt-get update
-          # sudo apt-get install docker-ce
-
-      - name: Check if Python is installed
-        run: python --version || echo "Python is not installed"
-
-      - name: Install Python if not installed
-        if: steps.python.outputs.exit-code != '0'
-        run: |
-          # Add commands here to install Python on the self-hosted runner
-          # For example, if using Ubuntu:
-          # sudo apt-get update
-          # sudo apt-get install python3
-
-      - name: Log in to Docker Hub
-        run: docker login -u 1000pavan -p 1008Pavan@
-
-      - name: Pull Docker image from Docker Hub
-        run: docker pull registry
-
-      - name: Install registry image if not installed
-        if: steps.pull.outputs.exit-code != '0'
-        run: |
-          docker pull registry
-
-      - name: Create Dockerfile
-        run: echo "FROM registry" > Dockerfile && echo "RUN apt-get update && apt-get install -y python3" >> Dockerfile
-
-      - name: Build Docker image with Python
-        run: docker build -t registry_with_python .
-
-      - name: Run Python script in Docker
-        run: |
-          docker run --rm -v $(pwd):/workspace -w /workspace registry_with_python python GitPull.py
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/labels \
+            | jq -r '.[].name' > labels.txt
+          echo "::set-output name=labels::$(cat labels.txt)"
