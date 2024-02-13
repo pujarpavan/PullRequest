@@ -21,6 +21,6 @@ jobs:
 
       - name: Run Python script
         run: |
-          python your_script.py
+          GitPull.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
