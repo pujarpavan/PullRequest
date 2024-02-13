@@ -4,7 +4,8 @@ on:
 
 jobs:
   check_pull_requests:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted  # Specify that the job should run on a self-hosted runner
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -21,6 +22,6 @@ jobs:
 
       - name: Run Python script
         run: |
-          GitPull.py
+          python GitPull.py  # Assuming GitPull.py is your Python script file
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
