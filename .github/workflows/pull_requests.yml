@@ -1,33 +1,20 @@
-name: Pull PR Labels
+name: List Closed Pull Requests
 
 on:
-  schedule:
-    - cron: '*/2 * * * *'  # Run every 2 minutes
+  workflow_dispatch:
 
 jobs:
-  pull_labels:
+  list-prs:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Get PR Labels
-        id: get_labels
-        run: |
-          response=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/labels")
-          if [[ $? -ne 0 ]]; then
-            echo "Failed to fetch labels."
-            exit 1
-          fi
-          echo "Response from API: $response"
-          labels=$(echo "$response" | jq -r '.[].name')
-          if [[ $? -ne 0 ]]; then
-            echo "Failed to parse labels."
-            echo "Response: $response"
-            exit 1
-          fi
-          echo "Fetched labels: $labels"
-          echo "::set-output name=labels::$labels"
+      - name: List closed pull requests
+        uses: actions/github-script@v5
+        with:
+          script: |
+            const octokit = github.getOctokit('${{ secrets.GITHUB_TOKEN }}');
+            const { data: pulls } = await octokit.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'closed'
+            });
+            console.log(pulls.map(pull => `${pull.html_url} - ${pull.title}`).join('\n'));
